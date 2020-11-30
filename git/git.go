@@ -74,7 +74,10 @@ func publicKey(filePath string) (*ssh.PublicKeys, error) {
 }
 
 func PushTag(r *Repository, publicKeyPath string, tag string) error {
-	auth, _ := publicKey(publicKeyPath)
+	auth, err := publicKey(publicKeyPath)
+	if err != nil {
+		return err
+	}
 
 	refSpec := config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag))
 	po := &PushOptions{
@@ -83,7 +86,7 @@ func PushTag(r *Repository, publicKeyPath string, tag string) error {
 		RefSpecs:   []config.RefSpec{refSpec},
 		Auth:       auth,
 	}
-	err := r.Push(po)
+	err = r.Push(po)
 
 	if err != nil {
 		if err == NoErrAlreadyUpToDate {
@@ -122,7 +125,7 @@ func LatestRef(repo *Repository, prefix string) (SemverRef, error) {
 	} else {
 		sort.Sort(SemverRefColl(versions))
 		latestVersion := versions[len(versions)-1]
-		log.Infof("Latest version: %v\n", latestVersion)
+		log.Debugf("Latest version: %v\n", latestVersion)
 		return latestVersion, nil
 	}
 }
