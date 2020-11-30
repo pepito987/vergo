@@ -7,6 +7,9 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"golang.org/x/crypto/ssh"
+	"io/ioutil"
 )
 
 var bumpCmd = &cobra.Command{
@@ -15,6 +18,16 @@ var bumpCmd = &cobra.Command{
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"patch", "minor", "major"},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logLevelParam, err := cmd.Flags().GetString("log-level")
+		CheckIfError(err)
+		logLevel, err := log.ParseLevel(logLevelParam)
+		if err != nil {
+			log.WithError(err).Errorln("invalid log level, using INFO instead")
+			log.SetLevel(log.InfoLevel)
+		} else {
+			log.SetLevel(logLevel)
+		}
+
 		prefix, err := cmd.Flags().GetString("tag-prefix")
 		CheckIfError(err)
 		repoLocation, err := cmd.Flags().GetString("repository-location")
@@ -26,10 +39,18 @@ var bumpCmd = &cobra.Command{
 		pushTag, err := cmd.Flags().GetBool("push-tag")
 		CheckIfError(err)
 		if pushTag {
-			publicKeyLocation, err := cmd.Flags().GetString("public-key-location")
+			keyLocation, err := cmd.Flags().GetString("key-location")
 			CheckIfError(err)
-			log.Debugf("Public key location %v", publicKeyLocation)
-			err = vergo.PushTag(repo, publicKeyLocation, version.String())
+			sshKey, err := ioutil.ReadFile(keyLocation)
+			CheckIfError(err)
+			passphrase, err := cmd.Flags().GetString("passphrase")
+			CheckIfError(err)
+
+			signer, err := ssh.ParsePrivateKeyWithPassphrase(sshKey, []byte(passphrase))
+			CheckIfError(err)
+
+			log.Debugf("Public key location %v", keyLocation)
+			err = vergo.PushTag(repo, signer, version, prefix)
 			CheckIfError(err)
 		} else {
 			log.Trace("Push not enabled")
@@ -46,6 +67,7 @@ func init() {
 	bumpCmd.Flags().Bool("push-tag", false, "push the new tag")
 	bumpCmd.Flags().String("tag-prefix", "", "version prefix")
 	bumpCmd.Flags().String("repository-location", ".", "repository location")
-	bumpCmd.Flags().String("public-key-location", homedir+".ssh/", "public key location")
+	bumpCmd.Flags().String("key-location", homedir+"/.ssh/id_rsa", `private key location, default: $homedir+"/.ssh/id_rsa"`)
+	bumpCmd.Flags().String("passphrase", "", `private key passphrase`)
 	rootCmd.AddCommand(bumpCmd)
 }

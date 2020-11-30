@@ -9,7 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	gossh "golang.org/x/crypto/ssh"
 	"os"
 	"regexp"
 	"sort"
@@ -52,33 +52,11 @@ func CreateTag(repo *Repository, version *semver.Version, prefix string) error {
 	return nil
 }
 
-func publicKey1() (*ssh.PublicKeys, error) {
-	var publicKey *ssh.PublicKeys
-	sshPath := os.Getenv("HOME") + "/.ssh/github_rsa"
-	sshKey, _ := ioutil.ReadFile(sshPath)
-	publicKey, err := ssh.NewPublicKeys("git", []byte(sshKey), "")
-	if err != nil {
-		return nil, err
-	}
-	return publicKey, err
-}
+func PushTag(r *Repository, signer gossh.Signer, version *semver.Version, prefix string) error {
+	tag := prefix + version.String()
+	auth := &ssh.PublicKeys{User: "git", Signer: signer}
 
-func publicKey(filePath string) (*ssh.PublicKeys, error) {
-	var publicKey *ssh.PublicKeys
-	sshKey, _ := ioutil.ReadFile(filePath)
-	publicKey, err := ssh.NewPublicKeys("git", sshKey, "")
-	if err != nil {
-		return nil, err
-	}
-	return publicKey, err
-}
-
-func PushTag(r *Repository, publicKeyPath string, tag string) error {
-	auth, err := publicKey(publicKeyPath)
-	if err != nil {
-		return err
-	}
-
+	log.Debugf("Pushing tag: %v", tag)
 	refSpec := config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag))
 	po := &PushOptions{
 		RemoteName: "origin",
@@ -86,7 +64,7 @@ func PushTag(r *Repository, publicKeyPath string, tag string) error {
 		RefSpecs:   []config.RefSpec{refSpec},
 		Auth:       auth,
 	}
-	err = r.Push(po)
+	err := r.Push(po)
 
 	if err != nil {
 		if err == NoErrAlreadyUpToDate {

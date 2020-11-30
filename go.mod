@@ -11,5 +11,6 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
+	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 )
