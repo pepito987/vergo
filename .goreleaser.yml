@@ -1,0 +1,25 @@
+project_name: vergo
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - main: main.go
+    binary: vergo
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+
+release:
+  disable: true
+
+uploads:
+  # You can have multiple Put instances.
+  -
+    # Unique name of your Put instance. Used to identify the instance.
+    name: production
+    method: PUT
+    mode: archive
+    target: '{{ .Env.UPLOAD_TARGET }}/{{ .ProjectName }}/{{ .Version }}/'
