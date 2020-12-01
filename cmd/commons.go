@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 	"strings"
 )
 
@@ -26,5 +28,15 @@ func setLogger(cmd *cobra.Command) {
 		log.SetLevel(log.InfoLevel)
 	} else {
 		log.SetLevel(logLevel)
+	}
+}
+
+func checkAuthSocket(cmd *cobra.Command) (string, error) {
+	pushTag, err := cmd.Flags().GetBool("push-tag")
+	CheckIfError(err)
+	if socket, found := os.LookupEnv("SSH_AUTH_SOCK"); pushTag && !found {
+		return "", errors.New("SSH_AUTH_SOCK is not defined")
+	} else {
+		return socket, nil
 	}
 }

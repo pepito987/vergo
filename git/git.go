@@ -9,7 +9,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	log "github.com/sirupsen/logrus"
-	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
+	"net"
 	"os"
 	"regexp"
 	"sort"
@@ -53,9 +54,26 @@ func CreateTag(repo *Repository, version *semver.Version, prefix string) error {
 	return nil
 }
 
-func PushTag(r *Repository, signer gossh.Signer, version *semver.Version, prefix string) error {
+func PushTag(r *Repository, socket string, version *semver.Version, prefix string) error {
 	tag := prefix + version.String()
-	auth := &ssh.PublicKeys{User: "git", Signer: signer}
+
+	conn, err := net.Dial("unix", socket)
+	if err != nil {
+		log.WithError(err).Fatalln("Failed to open SSH_AUTH_SOCK")
+	}
+
+	agentClient := agent.NewClient(conn)
+	defer conn.Close()
+
+	signers, err := agentClient.Signers()
+	if err != nil {
+		log.WithError(err).Fatalln("failed to get signers")
+	}
+
+	auth := &ssh.PublicKeys{
+		User:   "git",
+		Signer: signers[0],
+	}
 
 	log.Debugf("Pushing tag: %v", tag)
 	refSpec := config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag))
@@ -65,7 +83,7 @@ func PushTag(r *Repository, signer gossh.Signer, version *semver.Version, prefix
 		RefSpecs:   []config.RefSpec{refSpec},
 		Auth:       auth,
 	}
-	err := r.Push(po)
+	err = r.Push(po)
 
 	if err != nil {
 		if err == NoErrAlreadyUpToDate {

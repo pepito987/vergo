@@ -29,6 +29,5 @@ var getCmd = &cobra.Command{
 
 func init() {
 	getCmd.Flags().String("repository-location", ".", "repository location")
-	getCmd.Flags().String("public-key-location", ".ssh/", "public key location")
 	rootCmd.AddCommand(getCmd)
 }
