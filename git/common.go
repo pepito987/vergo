@@ -1,22 +1,55 @@
 package git
 
-import "strings"
+import (
+	"github.com/Masterminds/semver"
+	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/util"
+	. "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
+)
 
-const defaultDotGitPath = ".git"
+func NewVersionT(t *testing.T, version string) *semver.Version {
+	v, err := semver.NewVersion(version)
+	assert.Nil(t, err)
+	return v
+}
 
-// countLines returns the number of lines in a string à la git, this is
-// The newline character is assumed to be '\n'.  The empty string
-// contains 0 lines.  If the last line of the string doesn't end with a
-// newline, it will still be considered a line.
-func countLines(s string) int {
-	if s == "" {
-		return 0
+func defaultSignature() *object.Signature {
+	when, _ := time.Parse(object.DateFormat, "Thu May 04 00:03:43 2017 +0200")
+	return &object.Signature{
+		Name:  "foo",
+		Email: "foo@foo.foo",
+		When:  when,
 	}
+}
 
-	nEOL := strings.Count(s, "\n")
-	if strings.HasSuffix(s, "\n") {
-		return nEOL
-	}
+func RepositoryWithDefaultCommit(t *testing.T) *Repository {
+	fs := memfs.New()
+	r, err := Init(memory.NewStorage(), fs)
+	assert.Nil(t, err)
+	DoCommit(t, r, "foo")
+	_, err = r.Head()
+	assert.Nil(t, err)
+	return r
+}
 
-	return nEOL + 1
+func DoCommit(t *testing.T, r *Repository, file string) {
+	w, err := r.Worktree()
+	assert.Nil(t, err)
+
+	err = util.WriteFile(w.Filesystem, file, nil, 0755)
+	assert.Nil(t, err)
+
+	_, err = w.Add(file)
+	assert.Nil(t, err)
+
+	_, err = w.Commit(file, &CommitOptions{
+		Author:    defaultSignature(),
+		Committer: defaultSignature(),
+	})
+	assert.Nil(t, err)
 }
