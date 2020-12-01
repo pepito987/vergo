@@ -13,6 +13,7 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().String("log-level", "Info", "set log level")
+	rootCmd.PersistentFlags().String("tag-prefix", "", "version prefix")
 }
 
 // Execute executes the root command.

@@ -15,17 +15,18 @@ import (
 	"sort"
 )
 
-var refPrefix = "refs/tags/"
+const refPrefix = "refs/tags/"
 
 func tagExists(r *Repository, tag string) (bool, error) {
 	tags, err := r.Tags()
+	tag = refPrefix + tag
 	if err != nil {
 		log.Printf("get tags error: %s", err)
 		return false, err
 	}
 	found := false
 	err = tags.ForEach(func(r *plumbing.Reference) error {
-		if r.Name().String() == fmt.Sprintf("%s%s", refPrefix, tag) {
+		if r.Name().String() == tag {
 			found = true
 		}
 		return nil

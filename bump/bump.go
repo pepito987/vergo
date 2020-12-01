@@ -7,10 +7,11 @@ import (
 	. "github.com/go-git/go-git/v5"
 	"github.com/inanme/vergo/git"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 func NextVersion(increment string, version semver.Version) (incrementedVersion semver.Version, err error) {
-	switch increment {
+	switch strings.ToLower(increment) {
 	case "patch":
 		incrementedVersion = version.IncPatch()
 	case "minor":

@@ -19,9 +19,11 @@ unit-tests:
 
 tag-test:
 	`which git` ls-remote --tags origin
-	@`which git` push --delete origin banana-0.2.0
+	@-`which git` push --delete origin banana-0.2.0
 	`which git` tag | xargs -I@ `which git` tag -d @
 	`which git` tag banana-0.1.0 737ea45
+	`which git` tag apple-0.1.1 737ea45
+	`which git` tag v0.1.2 737ea45
 	#vergo bump minor --tag-prefix banana- --push-tag --log-level=trace --passphrase=
 
 release-test:

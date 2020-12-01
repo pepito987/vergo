@@ -7,10 +7,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 )
+
 
 var bumpCmd = &cobra.Command{
 	Use:       "bump (patch|minor|major)",
@@ -18,17 +18,9 @@ var bumpCmd = &cobra.Command{
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"patch", "minor", "major"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logLevelParam, err := cmd.Flags().GetString("log-level")
-		CheckIfError(err)
-		logLevel, err := log.ParseLevel(logLevelParam)
-		if err != nil {
-			log.WithError(err).Errorln("invalid log level, using INFO instead")
-			log.SetLevel(log.InfoLevel)
-		} else {
-			log.SetLevel(logLevel)
-		}
-
+		setLogger(cmd)
 		prefix, err := cmd.Flags().GetString("tag-prefix")
+		prefix = sanitiseTagPrefix(prefix)
 		CheckIfError(err)
 		repoLocation, err := cmd.Flags().GetString("repository-location")
 		CheckIfError(err)
@@ -65,7 +57,6 @@ func init() {
 		log.WithError(err).Errorln("can not find homedir")
 	}
 	bumpCmd.Flags().Bool("push-tag", false, "push the new tag")
-	bumpCmd.Flags().String("tag-prefix", "", "version prefix")
 	bumpCmd.Flags().String("repository-location", ".", "repository location")
 	bumpCmd.Flags().String("key-location", homedir+"/.ssh/id_rsa", `private key location, default: $homedir+"/.ssh/id_rsa"`)
 	bumpCmd.Flags().String("passphrase", "", `private key passphrase`)
