@@ -5,7 +5,7 @@ import (
 	"github.com/go-git/go-billy/v5/memfs"
 	. "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/inanme/vergo/git"
+	. "github.com/inanme/vergo/internal"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -23,18 +23,18 @@ func TestShouldIncrementPatch(t *testing.T) {
 	}{
 		{
 			increment: "patch",
-			pre:       git.NewVersionT(t, "v0.1.0"),
-			post:      git.NewVersionT(t, "v0.1.1"),
+			pre:       NewVersionT(t, "v0.1.0"),
+			post:      NewVersionT(t, "v0.1.1"),
 		},
 		{
 			increment: "minor",
-			pre:       git.NewVersionT(t, "v0.1.0"),
-			post:      git.NewVersionT(t, "v0.2.0"),
+			pre:       NewVersionT(t, "v0.1.0"),
+			post:      NewVersionT(t, "v0.2.0"),
 		},
 		{
 			increment: "major",
-			pre:       git.NewVersionT(t, "v0.1.0"),
-			post:      git.NewVersionT(t, "v1.0.0"),
+			pre:       NewVersionT(t, "v0.1.0"),
+			post:      NewVersionT(t, "v1.0.0"),
 		},
 	}
 	for _, version := range versions {
@@ -69,31 +69,31 @@ func TestBump(t *testing.T) {
 	}{
 		{
 			increment: "patch",
-			pre:       git.NewVersionT(t, "0.1.0"),
-			post:      git.NewVersionT(t, "0.1.1"),
+			pre:       NewVersionT(t, "0.1.0"),
+			post:      NewVersionT(t, "0.1.1"),
 		},
 		{
 			increment: "minor",
-			pre:       git.NewVersionT(t, "0.1.0"),
-			post:      git.NewVersionT(t, "0.2.0"),
+			pre:       NewVersionT(t, "0.1.0"),
+			post:      NewVersionT(t, "0.2.0"),
 		},
 		{
 			increment: "major",
-			pre:       git.NewVersionT(t, "0.1.0"),
-			post:      git.NewVersionT(t, "1.0.0"),
+			pre:       NewVersionT(t, "0.1.0"),
+			post:      NewVersionT(t, "1.0.0"),
 		},
 	}
 	for _, prefix := range prefixes {
 		for _, version := range versions {
 			t.Run(prefix, func(t *testing.T) {
-				r := git.RepositoryWithDefaultCommit(t)
+				r := RepositoryWithDefaultCommit(t)
 				v010, _ := r.Head()
 
 				ref, err := r.CreateTag(prefix+version.pre.String(), v010.Hash(), nil)
 				assert.Nil(t, err)
 				assert.NotNil(t, ref)
 
-				git.DoCommit(t, r, "bar")
+				DoCommit(t, r, "bar")
 				assert.Nil(t, err)
 
 				actualTag, err := Bump(r, prefix, version.increment)

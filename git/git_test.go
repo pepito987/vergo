@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	. "github.com/inanme/vergo/internal"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
