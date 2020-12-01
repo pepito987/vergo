@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
-	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
 	. "github.com/go-git/go-git/v5"
@@ -24,10 +23,8 @@ func TestNoTag(t *testing.T) {
 
 	for _, prefix := range prefixes {
 		t.Run(prefix, func(t *testing.T) {
-			fs := memfs.New()
-			r, err := Init(memory.NewStorage(), fs)
-			assert.Nil(t, err)
-			_, err = LatestRef(r, prefix)
+			r := repositoryWithDefaultCommit(t)
+			_, err := LatestRef(r, prefix)
 			assert.Regexp(t, "no tag found", err)
 		})
 	}
@@ -38,20 +35,10 @@ func TestTagExists(t *testing.T) {
 
 	for _, prefix := range prefixes {
 		t.Run(prefix, func(t *testing.T) {
-			fs := memfs.New()
-			r, err := Init(memory.NewStorage(), fs)
-			assert.Nil(t, err)
+			r := repositoryWithDefaultCommit(t)
 
-			w, err := r.Worktree()
-			assert.Nil(t, err)
-
-			doCommit(t, fs, w, "foo")
-			_, err = r.Head()
-			assert.Nil(t, err)
-
-			aVersion, err := semver.NewVersion("0.0.1")
-			assert.Nil(t, err)
-			err = CreateTag(r, aVersion, prefix)
+			aVersion := newVersion(t,"0.0.1")
+			err := CreateTag(r, aVersion, prefix)
 			assert.Nil(t, err)
 			found, err := tagExists(r, prefix+"0.0.1")
 			assert.Nil(t, err)
@@ -65,24 +52,13 @@ func TestTagAlreadyExists(t *testing.T) {
 
 	for _, prefix := range prefixes {
 		t.Run(prefix, func(t *testing.T) {
-			fs := memfs.New()
-			r, err := Init(memory.NewStorage(), fs)
+			r := repositoryWithDefaultCommit(t)
+
+			aVersion := newVersion(t, "0.0.1")
+			err := CreateTag(r, aVersion, prefix)
 			assert.Nil(t, err)
 
-			w, err := r.Worktree()
-			assert.Nil(t, err)
-
-			doCommit(t, fs, w, "foo")
-			_, err = r.Head()
-			assert.Nil(t, err)
-
-			aVersion, err := semver.NewVersion("0.0.1")
-			assert.Nil(t, err)
-			err = CreateTag(r, aVersion, prefix)
-			assert.Nil(t, err)
-
-			anotherVersion, err := semver.NewVersion("0.0.1")
-			assert.Nil(t, err)
+			anotherVersion := newVersion(t, "0.0.1")
 			err = CreateTag(r, anotherVersion, prefix)
 			assert.Regexp(t, "already exists", err)
 		})
@@ -90,14 +66,7 @@ func TestTagAlreadyExists(t *testing.T) {
 }
 
 func TestFindLatestTagSameCommitNoPrefix(t *testing.T) {
-	fs := memfs.New()
-	r, err := Init(memory.NewStorage(), fs)
-	assert.Nil(t, err)
-
-	w, err := r.Worktree()
-	assert.Nil(t, err)
-
-	doCommit(t, fs, w, "foo")
+	r := repositoryWithDefaultCommit(t)
 	head, err := r.Head()
 	assert.Nil(t, err)
 
@@ -112,8 +81,7 @@ func TestFindLatestTagSameCommitNoPrefix(t *testing.T) {
 
 					semverRef, err := LatestRef(r, "")
 					assert.Nil(t, err)
-					expectedTag, err := semver.NewVersion(version)
-					assert.Nil(t, err)
+					expectedTag := newVersion(t, version)
 					assert.Equal(t, *expectedTag, *semverRef.Version)
 					assert.Equal(t, semverRef.Ref.Hash(), head.Hash())
 				})
@@ -123,14 +91,7 @@ func TestFindLatestTagSameCommitNoPrefix(t *testing.T) {
 }
 
 func TestFindLatestTagSameCommitWithPrefix(t *testing.T) {
-	fs := memfs.New()
-	r, err := Init(memory.NewStorage(), fs)
-	assert.Nil(t, err)
-
-	w, err := r.Worktree()
-	assert.Nil(t, err)
-
-	doCommit(t, fs, w, "foo")
+	r := repositoryWithDefaultCommit(t)
 	head, err := r.Head()
 	assert.Nil(t, err)
 
@@ -155,21 +116,25 @@ func TestFindLatestTagSameCommitWithPrefix(t *testing.T) {
 
 					semverRef, err := LatestRef(r, tagPrefix1)
 					assert.Nil(t, err)
-					expectedVersion, err := semver.NewVersion(version1)
-					assert.Nil(t, err)
+					expectedVersion := newVersion(t, version1)
 					assert.Equal(t, *expectedVersion, *semverRef.Version)
 					assert.Equal(t, semverRef.Ref.Hash(), head.Hash())
 
 					semverRef2, err := LatestRef(r, tagPrefix2)
 					assert.Nil(t, err)
-					expectedVersion2, err := semver.NewVersion(version2)
-					assert.Nil(t, err)
+					expectedVersion2 := newVersion(t, version2)
 					assert.Equal(t, *expectedVersion2, *semverRef2.Version)
 					assert.Equal(t, ref2.Hash(), head.Hash())
 				})
 			}
 		}
 	}
+}
+
+func newVersion(t *testing.T, version string) *semver.Version {
+	v, err := semver.NewVersion(version)
+	assert.Nil(t, err)
+	return v
 }
 
 func defaultSignature() *object.Signature {
@@ -181,8 +146,21 @@ func defaultSignature() *object.Signature {
 	}
 }
 
-func doCommit(t *testing.T, fs billy.Filesystem, w *Worktree, file string) {
-	err := util.WriteFile(fs, file, nil, 0755)
+func repositoryWithDefaultCommit(t *testing.T) *Repository {
+	fs := memfs.New()
+	r, err := Init(memory.NewStorage(), fs)
+	assert.Nil(t, err)
+	doCommit(t,r,"foo")
+	_, err = r.Head()
+	assert.Nil(t, err)
+	return r
+}
+
+func doCommit(t *testing.T, r *Repository, file string) {
+	w, err := r.Worktree()
+	assert.Nil(t, err)
+
+	err = util.WriteFile(w.Filesystem, file, nil, 0755)
 	assert.Nil(t, err)
 
 	_, err = w.Add(file)
