@@ -1,13 +1,16 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/Masterminds/semver"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
 	. "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
+	"sort"
 	"testing"
 	"time"
 )
@@ -52,4 +55,24 @@ func DoCommit(t *testing.T, r *Repository, file string) {
 		Committer: defaultSignature(),
 	})
 	assert.Nil(t, err)
+}
+
+func PrintTags(t *testing.T, r *Repository) {
+	iter, err := r.Tags()
+	assert.Nil(t, err)
+	var tags []string
+	err = iter.ForEach(func(r *plumbing.Reference) error {
+		tags = append(tags, r.Name().String())
+		return nil
+	})
+	assert.Nil(t, err)
+
+	sort.Strings(tags)
+
+	fmt.Print("tags: ")
+	for _, tag := range tags {
+		fmt.Print(tag, ", ")
+	}
+	fmt.Println()
+
 }

@@ -18,13 +18,10 @@ unit-tests:
 	go test ./...
 
 tag-test:
-	`which git` ls-remote --tags origin
-	@-printf "banana-0.2.0\nbanana-0.1.0\napple-0.1.0\napple-0.2.0" | xargs -n1 -I@ `which git` push --delete origin @
-	@`which git` tag -l | grep -E "apple|banana" | xargs -I@ `which git` tag -d @
-	`which git` tag banana-0.1.0 737ea45
+	@-`which git` ls-remote --tags origin | awk '{gsub("refs/tags/","", $$2);print $$2}' | grep -E 'app|apple|banana' | xargs -n1 -I@ `which git` push --delete origin @
+	@-`which git` tag | grep -E 'app|apple|banana' | xargs -n1 -I@ `which git` tag -d @
+	`which git` tag app-0.1.0 737ea45
 	`which git` tag apple-0.1.1 737ea45
-	`which git` tag v0.1.2 737ea45
-	#vergo bump minor --tag-prefix banana- --push-tag --log-level=trace --passphrase=
 
 release-test:
 	@-`which git` tag -d v9.9.999

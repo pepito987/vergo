@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 )
 
 const refPrefix = "refs/tags/"
@@ -107,7 +108,7 @@ func PushTag(r *Repository, socket string, version *semver.Version, prefix strin
 
 func LatestRef(repo *Repository, prefix string) (SemverRef, error) {
 	tagPrefix := refPrefix + prefix
-	re := regexp.MustCompile(tagPrefix + `(.*)`)
+	re := regexp.MustCompile("^" + tagPrefix + semver.SemVerRegex + "$")
 
 	tagRefs, err := repo.Tags()
 	if err != nil {
@@ -115,17 +116,21 @@ func LatestRef(repo *Repository, prefix string) (SemverRef, error) {
 	}
 
 	var versions []SemverRef
-	err = tagRefs.ForEach(func(t *plumbing.Reference) error {
-		if re.MatchString(t.Name().String()) {
-			matchingTag := re.FindAllStringSubmatch(t.Name().String(), -1)
-			if version, err := semver.NewVersion(matchingTag[0][1]); err == nil {
+	if err = tagRefs.ForEach(func(t *plumbing.Reference) error {
+		tag := t.Name().String()
+		if re.MatchString(tag) {
+			versionString := strings.TrimLeft(tag, tagPrefix)
+			if version, err := semver.NewVersion(versionString); err == nil {
 				versions = append(versions, SemverRef{version, t})
 			} else {
 				return err
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return EmptyRef, err
+	}
+
 	if len(versions) == 0 {
 		return EmptyRef, errors.New("no tag found, please create first tag manually")
 	} else {

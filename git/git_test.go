@@ -97,15 +97,18 @@ func TestFindLatestTagSameCommitWithPrefix(t *testing.T) {
 					tagPrefix1 := "common-schema-"
 					version1 := fmt.Sprintf("%d.%d.%d", i, j, k)
 					tag1 := fmt.Sprintf("%s%s", tagPrefix1, version1)
+					PrintTags(t, r)
 					ref1, err := r.CreateTag(tag1, head.Hash(), nil)
 					assert.Nil(t, err)
+					PrintTags(t, r)
 					assert.Equal(t, ref1.Hash(), head.Hash())
 
-					tagPrefix2 := "gatling-commons-"
+					tagPrefix2 := tagPrefix1 + "extensions-"
 					version2 := fmt.Sprintf("%d.%d.%d", i*100, j*100, k*100)
 					tag2 := fmt.Sprintf("%s%s", tagPrefix2, version2)
 					ref2, err := r.CreateTag(tag2, head.Hash(), nil)
 					assert.Nil(t, err)
+					PrintTags(t, r)
 					assert.Equal(t, ref2.Hash(), head.Hash())
 
 					semverRef, err := LatestRef(r, tagPrefix1)
