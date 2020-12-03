@@ -35,7 +35,7 @@ func tagExists(r *Repository, tag string) (bool, error) {
 	return found, err
 }
 
-func CreateTag(repo *Repository, version *semver.Version, prefix string) error {
+func CreateTag(repo *Repository, version *semver.Version, prefix string, dryRun bool) error {
 	tag := prefix + version.String()
 	if found, err := tagExists(repo, tag); found || err != nil {
 		return fmt.Errorf("tag %s already exists", tag)
@@ -45,16 +45,20 @@ func CreateTag(repo *Repository, version *semver.Version, prefix string) error {
 	if err != nil {
 		return fmt.Errorf("get HEAD error: %s", err)
 	}
-	_, err = repo.CreateTag(tag, h.Hash(), nil)
+	if dryRun {
+		log.Infof("Dry run: create tag %v", tag)
+	} else {
+		_, err = repo.CreateTag(tag, h.Hash(), nil)
 
-	if err != nil {
-		return fmt.Errorf("create tag error: %s", err)
+		if err != nil {
+			return fmt.Errorf("create tag error: %s", err)
+		}
 	}
 
 	return nil
 }
 
-func PushTag(r *Repository, socket string, version *semver.Version, prefix string) error {
+func PushTag(r *Repository, socket string, version *semver.Version, prefix string, dryRun bool) error {
 	tag := prefix + version.String()
 
 	conn, err := net.Dial("unix", socket)
@@ -83,15 +87,20 @@ func PushTag(r *Repository, socket string, version *semver.Version, prefix strin
 		RefSpecs:   []config.RefSpec{refSpec},
 		Auth:       auth,
 	}
-	err = r.Push(po)
 
-	if err != nil {
-		if err == NoErrAlreadyUpToDate {
-			log.Print("origin remote was up to date, no push done")
-			return nil
+	if dryRun {
+		log.Infof("Dry run: push tag %v", tag)
+	} else {
+		err = r.Push(po)
+
+		if err != nil {
+			if err == NoErrAlreadyUpToDate {
+				log.Print("origin remote was up to date, no push done")
+				return nil
+			}
+			log.Printf("push to remote origin error: %s", err)
+			return err
 		}
-		log.Printf("push to remote origin error: %s", err)
-		return err
 	}
 	return nil
 }

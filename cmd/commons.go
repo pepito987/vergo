@@ -9,11 +9,13 @@ import (
 )
 
 func sanitiseTagPrefix(tagPrefix string) string {
-	switch strings.TrimSpace(tagPrefix) {
-	case "":
+	switch tagPrefix := strings.ToLower(strings.TrimSpace(tagPrefix)); {
+	case tagPrefix == "":
 		return "v"
-	case "v":
+	case tagPrefix == "v":
 		return "v"
+	case strings.HasSuffix(tagPrefix, "-"):
+		return tagPrefix
 	default:
 		return tagPrefix + "-"
 	}
@@ -31,9 +33,7 @@ func setLogger(cmd *cobra.Command) {
 	}
 }
 
-func checkAuthSocket(cmd *cobra.Command) (string, error) {
-	pushTag, err := cmd.Flags().GetBool("push-tag")
-	CheckIfError(err)
+func checkAuthSocket(pushTag bool) (string, error) {
 	if socket, found := os.LookupEnv("SSH_AUTH_SOCK"); pushTag && !found {
 		return "", errors.New("SSH_AUTH_SOCK is not defined")
 	} else {

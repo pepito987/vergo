@@ -53,7 +53,7 @@ func TestNoTag(t *testing.T) {
 				fs := memfs.New()
 				r, err := Init(memory.NewStorage(), fs)
 				assert.Nil(t, err)
-				_, err = Bump(r, prefix, increment)
+				_, err = Bump(r, prefix, increment, false)
 				assert.Regexp(t, "no tag found.*", err)
 			})
 		}
@@ -96,10 +96,10 @@ func TestBump(t *testing.T) {
 				DoCommit(t, r, "bar")
 				assert.Nil(t, err)
 
-				actualTag, err := Bump(r, prefix, version.increment)
+				actualTag, err := Bump(r, prefix, version.increment, false)
 				assert.Nil(t, err)
 				assert.Equal(t, *version.post, *actualTag)
-				_, err = Bump(r, prefix, version.increment)
+				_, err = Bump(r, prefix, version.increment, false)
 				assert.NotNil(t, err)
 			})
 		}

@@ -31,8 +31,8 @@ func TestTagExists(t *testing.T) {
 		t.Run(prefix, func(t *testing.T) {
 			r := RepositoryWithDefaultCommit(t)
 
-			aVersion := NewVersionT(t,"0.0.1")
-			err := CreateTag(r, aVersion, prefix)
+			aVersion := NewVersionT(t, "0.0.1")
+			err := CreateTag(r, aVersion, prefix, false)
 			assert.Nil(t, err)
 			found, err := tagExists(r, prefix+"0.0.1")
 			assert.Nil(t, err)
@@ -49,11 +49,11 @@ func TestTagAlreadyExists(t *testing.T) {
 			r := RepositoryWithDefaultCommit(t)
 
 			aVersion := NewVersionT(t, "0.0.1")
-			err := CreateTag(r, aVersion, prefix)
+			err := CreateTag(r, aVersion, prefix, false)
 			assert.Nil(t, err)
 
 			anotherVersion := NewVersionT(t, "0.0.1")
-			err = CreateTag(r, anotherVersion, prefix)
+			err = CreateTag(r, anotherVersion, prefix, false)
 			assert.Regexp(t, "already exists", err)
 		})
 	}

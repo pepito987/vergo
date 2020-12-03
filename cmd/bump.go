@@ -15,7 +15,12 @@ var bumpCmd = &cobra.Command{
 	ValidArgs: []string{"patch", "minor", "major"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		setLogger(cmd)
-		socket, err := checkAuthSocket(cmd)
+		increment := args[0]
+		dryRun, err := cmd.Flags().GetBool("dry-run")
+		CheckIfError(err)
+		pushTag, err := cmd.Flags().GetBool("push-tag")
+		CheckIfError(err)
+		socket, err := checkAuthSocket(pushTag)
 		CheckIfError(err)
 		prefix, err := cmd.Flags().GetString("tag-prefix")
 		prefix = sanitiseTagPrefix(prefix)
@@ -24,12 +29,10 @@ var bumpCmd = &cobra.Command{
 		CheckIfError(err)
 		repo, err := git.PlainOpen(repoLocation)
 		CheckIfError(err)
-		version, err := bump.Bump(repo, prefix, args[0])
-		CheckIfError(err)
-		pushTag, err := cmd.Flags().GetBool("push-tag")
+		version, err := bump.Bump(repo, prefix, increment, dryRun)
 		CheckIfError(err)
 		if pushTag {
-			err = vergo.PushTag(repo, socket, version, prefix)
+			err = vergo.PushTag(repo, socket, version, prefix, dryRun)
 			CheckIfError(err)
 		} else {
 			log.Trace("Push not enabled")
@@ -40,6 +43,5 @@ var bumpCmd = &cobra.Command{
 
 func init() {
 	bumpCmd.Flags().Bool("push-tag", false, "push the new tag")
-	bumpCmd.Flags().String("repository-location", ".", "repository location")
 	rootCmd.AddCommand(bumpCmd)
 }

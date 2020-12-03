@@ -1,18 +1,21 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/go-git/go-git/v5"
 	vergo "github.com/inanme/vergo/git"
 	"github.com/spf13/cobra"
 )
 
-var getCmd = &cobra.Command{
-	Use:   "get",
-	Short: "gets the version",
+var push = &cobra.Command{
+	Use:   "push",
+	Short: "push the latest tag to remote",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		setLogger(cmd)
+		dryRun, err := cmd.Flags().GetBool("dry-run")
+		CheckIfError(err)
+		socket, err := checkAuthSocket(true)
+		CheckIfError(err)
 		prefix, err := cmd.Flags().GetString("tag-prefix")
 		prefix = sanitiseTagPrefix(prefix)
 		CheckIfError(err)
@@ -22,12 +25,12 @@ var getCmd = &cobra.Command{
 		CheckIfError(err)
 		version, err := vergo.LatestRef(repo, prefix)
 		CheckIfError(err)
-		fmt.Print(version.Version.String())
+		err = vergo.PushTag(repo, socket, version.Version, prefix, dryRun)
+		CheckIfError(err)
 		return nil
 	},
 }
 
 func init() {
-
-	rootCmd.AddCommand(getCmd)
+	rootCmd.AddCommand(push)
 }

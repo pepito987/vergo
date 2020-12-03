@@ -24,7 +24,7 @@ func NextVersion(increment string, version semver.Version) (incrementedVersion s
 	return
 }
 
-func Bump(repo *Repository, tagPrefix, increment string) (*semver.Version, error) {
+func Bump(repo *Repository, tagPrefix, increment string, dryRun bool) (*semver.Version, error) {
 	latest, err := git.LatestRef(repo, tagPrefix)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func Bump(repo *Repository, tagPrefix, increment string) (*semver.Version, error
 	if err != nil {
 		return nil, err
 	}
-	if err := git.CreateTag(repo, &newVersion, tagPrefix); err != nil {
+	if err := git.CreateTag(repo, &newVersion, tagPrefix, dryRun); err != nil {
 		return nil, err
 	}
 	return &newVersion, nil

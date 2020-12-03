@@ -14,6 +14,8 @@ var (
 func init() {
 	rootCmd.PersistentFlags().String("log-level", "Info", "set log level")
 	rootCmd.PersistentFlags().String("tag-prefix", "", "version prefix")
+	rootCmd.PersistentFlags().String("repository-location", ".", "repository location")
+	rootCmd.PersistentFlags().Bool("dry-run", false, "dry run")
 }
 
 // Execute executes the root command.
